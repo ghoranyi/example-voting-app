@@ -1,0 +1,20 @@
+version: "2"
+
+services:
+  vote:
+    extends:
+      file: docker-compose.yml
+      service: vote
+    image: ghoranyi/docker-example-vote
+
+  worker:
+    extends:
+      file: docker-compose.yml
+      service: worker
+    image: ghoranyi/docker-example-worker
+
+  result:
+    extends:
+      file: docker-compose.yml
+      service: result
+    image: ghoranyi/docker-example-result
