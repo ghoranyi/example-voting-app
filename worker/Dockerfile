@@ -1,5 +1,7 @@
 FROM microsoft/dotnet:1.0.0-preview1
 
+RUN apt-get update && apt-get install -y --force-yes postgresql-client
+
 WORKDIR /app
 
 ADD src/ /app/src/

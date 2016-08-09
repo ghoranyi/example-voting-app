@@ -29,6 +29,7 @@ namespace Worker
                         Console.WriteLine($"Processing vote for '{vote.vote}' by '{vote.voter_id}'");
                         UpdateVote(pgsql, vote.voter_id, vote.vote);
                     }
+                    Thread.Sleep(100);
                 }
             }
             catch (Exception ex)
@@ -66,7 +67,7 @@ namespace Worker
 
             var command = connection.CreateCommand();
             command.CommandText = @"CREATE TABLE IF NOT EXISTS votes (
-                                        id VARCHAR(255) NOT NULL UNIQUE, 
+                                        id VARCHAR(255) NOT NULL UNIQUE,
                                         vote VARCHAR(255) NOT NULL
                                     )";
             command.ExecuteNonQuery();
@@ -104,22 +105,22 @@ namespace Worker
 
         private static void UpdateVote(NpgsqlConnection connection, string voterId, string vote)
         {
-            var command = connection.CreateCommand();
-            try
+            string strCmdText = "INSERT INTO votes (id, vote) VALUES ('" + voterId + "', '" + vote + "')";
+            var process = new System.Diagnostics.Process {
+              StartInfo = new System.Diagnostics.ProcessStartInfo {
+                  FileName = "psql",
+                  Arguments = "-h db -U postgres -c \"" + strCmdText + "\"",
+                  UseShellExecute = false,
+                  RedirectStandardOutput = true,
+                  CreateNoWindow = true
+              }
+            };
+            process.Start();
+            process.WaitForExit(5000);
+            if (process.ExitCode != 0)
             {
-                command.CommandText = "INSERT INTO votes (id, vote) VALUES (@id, @vote)";
-                command.Parameters.AddWithValue("@id", voterId);
-                command.Parameters.AddWithValue("@vote", vote);
-                command.ExecuteNonQuery();
-            }
-            catch (DbException)
-            {
-                command.CommandText = "UPDATE votes SET vote = @vote WHERE id = @id";
-                command.ExecuteNonQuery();
-            }
-            finally
-            {
-                command.Dispose();
+                strCmdText = "UPDATE votes SET vote = '" + vote + "' WHERE id = '" + voterId + "'";
+                System.Diagnostics.Process.Start("psql","-h db -U postgres -c \"" + strCmdText + "\"");
             }
         }
     }
